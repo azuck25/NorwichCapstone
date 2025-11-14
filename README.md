@@ -33,5 +33,7 @@ Database ERD Diagram
 
 
 Retool Frontend in Action
-<img width="974" height="480" alt="image" src="https://github.com/user-attachments/assets/3d8e4d65-1da9-4162-a8b7-9b319717c2a4" />
+
+https://github.com/user-attachments/assets/fa48e382-4f1f-400e-91f7-7860b7d704c3
+
 
