@@ -1,5 +1,6 @@
 # NorwichCapstone
 Backend System used to streamline financial time series data on equities to the frontend UI.
+
 System Description
 
 Frontend
