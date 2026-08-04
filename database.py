@@ -10,6 +10,16 @@ load_dotenv()
 
 Base = declarative_base()
 
+
+class Portfolio(Base):
+    __tablename__ = 'portfolio'
+    portfolioId = Column(String(20), primary_key=True);
+    stock = relationship("Stock", back_populates="portfolio", cascade="all delete-orphan")
+    
+
+
+
+
 # --- Models ---
 class Stock(Base):
     __tablename__ = 'stocks'
@@ -21,7 +31,31 @@ class Stock(Base):
     cash_flow = relationship("CashFlow", back_populates="stock", cascade="all, delete-orphan")
     spindex = relationship("SPindex", back_populates="stock", cascade="all, delete-orphan")
     timeseries_daily = relationship("TimeSeriesDaily", back_populates="stock", cascade="all, delete-orphan")
-    tbills = relationship("TbillData", back_populates="stock", cascade="all, delete-orphan")
+    
+    equity_statistics = relationship("EquityStatistics", back_populates="stock", cascade="all, delete-orphan")
+    
+    portfolio = relationship("Portfolio", back_populates="stock")
+
+class EquityStatistics(Base):
+    __tablename__ = 'equity_statistics'
+    id = Column(Integer, primary_key=True)
+    ticker = Column(String(20), ForeignKey('stocks.ticker', ondelete="CASCADE"), nullable=False)
+    geometric_mean_return = relationship("geometricMeanReturn", back_populates="geometric_mean_returns", cascade="all, delete-orphan")
+   
+    stock = relationship("Stock", back_populates="equity_statistics")
+
+class PortfolioStatistics(Base):
+    __tablename__ = 'portfolio_statistics'
+    id = Column(Integer, primary_key=True)
+    
+class geometricMeanReutrn(Base):
+    __tablename__ = 'geometric_mean_return'
+    holding_period = Column(Integer)
+    startDate = Column(Date, nullable=False)
+    endDate = Column(Date, nullable=False)
+    geometricMeanReturn = Column(Float)
+    
+    geometric_mean_returns = relationship("EquityStatistics", back_populates="geometric_mean_return")
 
 class TbillData(Base):
     __tablename__ = 'tbills'
@@ -227,6 +261,7 @@ class CashFlow(Base):
     proceedsFromIssuanceOfPreferredStock = Column(Float)
     proceedsFromRepurchaseOfEquity = Column(Float)
     proceedsFromSaleOfTreasuryStock = Column(Float)
+    stockBasedCompensation = Column(Float)
     changeInCashAndCashEquivalents = Column(Float)
     changeInExchangeRate = Column(Float)
     netIncome = Column(Float)
@@ -296,5 +331,6 @@ engine = create_engine(DATABASE_URL, echo=False)
 Session = sessionmaker(bind=engine)
 
 def initialize_database():
+    print("Entering into intialization")
     Base.metadata.create_all(engine)
     print(f"MySQL database '{DB_NAME}' initialized at {DB_HOST}:{DB_PORT}")

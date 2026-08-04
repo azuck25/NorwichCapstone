@@ -6,7 +6,7 @@ import re
 from io import StringIO
 from datetime import date
 
-apiKey = 'NNWS39IGZJ1O7OZM'
+apiKey = '5TFQU47K2QUCZVRF'
 balanceSheet = "BALANCE_SHEET"
 incomeStatement = "INCOME_STATEMENT"
 cashFlow = "CASH_FLOW"
@@ -23,7 +23,9 @@ function5 = 'TOP_GAINERS_LOSERS'
 
 def pull_Overview(symbol):
     overview = requests.get(url + function3 + '&symbol=' + symbol + '&apikey=' + apiKey)
+    print(overview)
     data_overview = overview.json()
+    print(data_overview)
     return data_overview
 def pull_balSheet(symbol):
     balSheet = requests.get(url + balanceSheet + '&symbol=' + symbol + '&apikey=' + apiKey)
@@ -44,6 +46,7 @@ def pull_timeSeriesPriceDaily(symbol):
 def pull_SP500(symbol):
     SnP500_meanR = requests.get(url + function2 + '&symbol=' + symbol + '&apikey=' + apiKey + "&datatype=csv&outputsize=full")
     data_SP500 = pd.read_csv(StringIO(SnP500_meanR.text))
+    print(data_SP500)
     return data_SP500
 def pull_cashFlow(symbol):
     cashFlow = requests.get(url + function4 + '&symbol=' + symbol + '&apikey=' + apiKey)
@@ -127,3 +130,6 @@ def normalizeClean(data):
 
     else:
         return None
+    
+    
+

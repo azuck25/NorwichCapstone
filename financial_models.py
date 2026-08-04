@@ -2,6 +2,7 @@ from AV_API_pull import balanceSheet
 from database import *
 from sqlalchemy.orm import sessionmaker, declarative_base
 import pandas as pd
+from modeling_functions import *
 
 
 class EquityInstrument:
@@ -60,12 +61,6 @@ def basic_model(ticker: str):
 
 
 
-
-
-
-
-
-
-basic_model("IBM")
+basic_model()
 
 
