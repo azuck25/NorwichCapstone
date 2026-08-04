@@ -66,4 +66,3 @@ def arithmeticReturn(vecX,n):
     arithR = sumReturns / n
     return arithR
 
-def holdingPeriodReturn(n1,n2)
