@@ -3,59 +3,63 @@ from database import *
 from AV_API_pull import *
 
 #Function triggers pulling, formating, and adding for the SP500
-def ingest_sp5(sp: str):
+def ingest_sp5(portfolioId: str, sp: str):
     print("Function Triggered")
     session = Session()
     sp_data = normalizeClean(pull_SP500(sp))
     print(sp_data)
-    stock = session.query(Stock).filter_by(ticker=sp).first()
-    if not stock and sp_data is not None:
+    portfolio = session.query(Portfolio).filter_by(portfolioName=portfolioId).first()
+    if not portfolio and sp_data is not None:
         print("SP500 data not found adding...")
-        stock = Stock(ticker=sp)
-        session.add(stock)
+        portfolio = Stock(ticker=sp)
+        session.add(portfolio)
         session.commit()
         sp_data = normalizeClean(pull_SP500(sp))
         #print(sp_data)
         if sp_data is not None:
             for _,row in sp_data.iterrows():
-                add_sp = SPindex(ticker=sp, **row)
+                add_sp = SPindex(ticker=sp,portId=portfolioId, **row)
                 session.add(add_sp)
             session.commit()
             session.close()
 
             return {"status": "success", "ticker": sp}
-    elif stock:
+    elif portfolio:
         return {"status": "data exists"}
 
     return None
 
-def ingest_tbill(ticker: str):
+def ingest_tbill(portfolioId: str, ticker: str):
     session = Session()
-    stock = session.query(Stock).filter_by(ticker=ticker).first()
-    if not stock:
+    portfolio = session.query(Portfolio).filter_by(portfolioName=portfolioId).first()
+    print(portfolio)
+    if not portfolio:
+        print("10Y TBILL data not found adding...")
         tbill_data = normalizeClean(pull_TbilltenY(ticker))
-        print("TBILL data not found adding...")
-
+        
         if tbill_data is not None:
-            stock = Stock(ticker=ticker)
-            session.add(stock)
+            print("Printing TBILL Data")
+            print(tbill_data)
+            portfolio = Portfolio(portfolioName=portfolioId)
+            session.add(portfolio)
             session.commit()
             for _,row in tbill_data.iterrows():
-                tbill_obj = TbillData(ticker=ticker,**row)
+                tbill_obj = TbillData(ticker=ticker,portId=portfolioId,**row)
                 session.add(tbill_obj)
+                
         session.commit()
         session.close()
     # Else if the stock is found and the function that adds data hasnt been triggered
     # Then delete the corresponding ticker data and recursively call the function to
     # refresh the data
-    elif stock:
-        session.delete(stock)
+    elif portfolio:
+        session.delete(portfolio)
         session.commit()
         ingest_tbill(ticker)
-        print("recursive function call updates Tbill data...")
+        print("Refreshing T-Bill Data...")
     return None
 
-def ingest_stock_data(ticker: str):
+def ingest_stock_data(portfolioId: str, ticker: str):
     session = Session()
     x = 0
     # Ensure stock record exists
@@ -71,7 +75,7 @@ def ingest_stock_data(ticker: str):
     if not stock and overview is not None:
         print("Stock not found updating entry...")
         print(stock)
-        stock = Stock(ticker=ticker)
+        stock = Stock(ticker=ticker, portId=portfolioId)
         session.add(stock)
         session.commit()
 

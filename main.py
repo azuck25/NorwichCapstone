@@ -15,9 +15,9 @@ def main():
     #First, we initialize the database, mapping the classes to the database schema
     print("Initializing database...")
     initialize_database()
-    ingest_tbill("US10Y")
-    ingest_sp5("SPY")
-    ingest_stock_data("A")
+    ingest_tbill("Portfolio1","US10Y")
+    ingest_sp5("Portfolio1","SPY")
+    ingest_stock_data("Portfolio1","A")
     ingest_important_data()
     
     

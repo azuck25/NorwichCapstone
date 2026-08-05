@@ -16,18 +16,18 @@ class Portfolio(Base):
     portfolioName = Column(String(20), primary_key=True)
     stocks = relationship("Stock", back_populates="portfolio")
     tbills = relationship("TbillData", back_populates="portfolio", cascade="all, delete-orphan")
-    
+    spindex = relationship("SPindex", back_populates="portfolio", cascade="all, delete-orphan")
+
     
 
 class Stock(Base):
     __tablename__ = 'stocks'
     ticker = Column(String(20), primary_key=True)
-    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"),nullable=False)
+    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"))
     overview = relationship("Overview", back_populates="stock", cascade="all, delete-orphan")
     balance_sheet = relationship("BalanceSheet", back_populates="stock", cascade="all, delete-orphan")
     income_statement = relationship("IncomeStatement", back_populates="stock", cascade="all, delete-orphan")
     cash_flow = relationship("CashFlow", back_populates="stock", cascade="all, delete-orphan")
-    spindex = relationship("SPindex", back_populates="stock", cascade="all, delete-orphan")
     timeseries_daily = relationship("TimeSeriesDaily", back_populates="stock", cascade="all, delete-orphan")
     equity_statistics = relationship("EquityStatistics", back_populates="stock", cascade="all, delete-orphan")
     
@@ -55,8 +55,9 @@ class geometricMeanReturn(Base):
 
 class TbillData(Base):
     __tablename__ = 'tbills'
-    ticker = Column(String(20),primary_key=True)
-    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"),nullable=False)
+    id = Column(Integer, primary_key=True)
+    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"))
+    ticker = Column(String(20))  
     date = Column(Date, nullable=False)
     value = Column(Float, nullable=False)
 
@@ -66,20 +67,19 @@ class TimeSeriesDaily(Base):
     __tablename__ = 'timeseries_daily'
     id = Column(Integer, primary_key=True)
     ticker = Column(String(20),ForeignKey('stocks.ticker', ondelete="CASCADE"), nullable=False)
-
     timestamp = Column(Date, nullable=False)
     close = Column(Float, nullable=False)
-
     stock = relationship("Stock", back_populates="timeseries_daily")
 
 class SPindex(Base):
     __tablename__ = 'spindex'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    ticker = Column(String(20), ForeignKey('stocks.ticker', ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True)
+    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"))
+    ticker = Column(String(20))
     timestamp = Column(Date,nullable=False)
     close = Column(Float, nullable=False)
 
-    stock = relationship("Stock", back_populates="spindex")
+    portfolio = relationship("Portfolio", back_populates="spindex")
 
 class Overview(Base):
     __tablename__ = 'overview'
