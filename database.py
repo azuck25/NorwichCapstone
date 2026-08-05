@@ -13,28 +13,25 @@ Base = declarative_base()
 
 class Portfolio(Base):
     __tablename__ = 'portfolio'
-    portfolioId = Column(String(20), primary_key=True);
-    stock = relationship("Stock", back_populates="portfolio", cascade="all delete-orphan")
+    portfolioName = Column(String(20), primary_key=True)
+    stocks = relationship("Stock", back_populates="portfolio")
+    tbills = relationship("TbillData", back_populates="portfolio", cascade="all, delete-orphan")
+    
     
 
-
-
-
-# --- Models ---
 class Stock(Base):
     __tablename__ = 'stocks'
     ticker = Column(String(20), primary_key=True)
-
+    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"),nullable=False)
     overview = relationship("Overview", back_populates="stock", cascade="all, delete-orphan")
     balance_sheet = relationship("BalanceSheet", back_populates="stock", cascade="all, delete-orphan")
     income_statement = relationship("IncomeStatement", back_populates="stock", cascade="all, delete-orphan")
     cash_flow = relationship("CashFlow", back_populates="stock", cascade="all, delete-orphan")
     spindex = relationship("SPindex", back_populates="stock", cascade="all, delete-orphan")
     timeseries_daily = relationship("TimeSeriesDaily", back_populates="stock", cascade="all, delete-orphan")
-    
     equity_statistics = relationship("EquityStatistics", back_populates="stock", cascade="all, delete-orphan")
     
-    portfolio = relationship("Portfolio", back_populates="stock")
+    portfolio = relationship("Portfolio", back_populates="stocks")
 
 class EquityStatistics(Base):
     __tablename__ = 'equity_statistics'
@@ -44,12 +41,11 @@ class EquityStatistics(Base):
    
     stock = relationship("Stock", back_populates="equity_statistics")
 
-class PortfolioStatistics(Base):
-    __tablename__ = 'portfolio_statistics'
-    id = Column(Integer, primary_key=True)
     
-class geometricMeanReutrn(Base):
+class geometricMeanReturn(Base):
     __tablename__ = 'geometric_mean_return'
+    id = Column(Integer, primary_key=True)
+    ticker = Column(String(20), ForeignKey('equity_statistics.ticker', ondelete="CASCADE"), nullable=False)
     holding_period = Column(Integer)
     startDate = Column(Date, nullable=False)
     endDate = Column(Date, nullable=False)
@@ -59,12 +55,12 @@ class geometricMeanReutrn(Base):
 
 class TbillData(Base):
     __tablename__ = 'tbills'
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String(20), ForeignKey('stocks.ticker', ondelete="CASCADE"), nullable=False)
+    ticker = Column(String(20),primary_key=True)
+    portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"),nullable=False)
     date = Column(Date, nullable=False)
     value = Column(Float, nullable=False)
 
-    stock = relationship("Stock", back_populates="tbills")
+    portfolio = relationship("Portfolio", back_populates="tbills")
 
 class TimeSeriesDaily(Base):
     __tablename__ = 'timeseries_daily'

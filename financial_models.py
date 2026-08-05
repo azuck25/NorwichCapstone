@@ -61,6 +61,6 @@ def basic_model(ticker: str):
 
 
 
-basic_model()
+
 
 
