@@ -1,6 +1,8 @@
 # NorwichCapstone
 Backend System used to streamline financial time series data on equities to the frontend UI.
 
+
+
 System Description
 
 Frontend
@@ -12,7 +14,9 @@ Backend
 
 •	The backend software supports the frontend by creating a database where financial time series data is then extracted from JSON format, normalized/formatted by Pandas, and loaded into the MySQL database. Once an API request is received by the backend the ingestion function for equity instruments is triggered where the backend will then start to make API calls to the AlphaVantage server to request for data via URL requests. The time series data is then received in JSON format where we will use the Pandas module to extract the data and format the data fields to their respective table in the MySQL database. Analyst metrics, financial statements, and historical pricing data is then made available for the frontend to retrieve as the database is hosted by the backend on a Ngrok server.
 
+Retool Frontend in Action
 
+https://github.com/user-attachments/assets/fa48e382-4f1f-400e-91f7-7860b7d704c3
 
 Context Diagram
 
@@ -32,9 +36,5 @@ Database ERD Diagram
 •	Database relational diagram with primary keys. In this software one stock has many statements ordered in a timeseries within the dbms.
 <img width="975" height="1025" alt="image" src="https://github.com/user-attachments/assets/989f6044-83a8-4a40-b16b-62663118eeec" />
 
-
-Retool Frontend in Action
-
-https://github.com/user-attachments/assets/fa48e382-4f1f-400e-91f7-7860b7d704c3
 
 
