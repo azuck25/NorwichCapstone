@@ -3,9 +3,9 @@
 from database import *  # Optional: one-time DB setup
 from pyngrok import ngrok
 import uvicorn, subprocess
-from db_commit import *
+import db_commit
 from data_injest import *
-from financial_models import *
+#from financial_models import *
 
 
 
@@ -15,10 +15,7 @@ def main():
     #First, we initialize the database, mapping the classes to the database schema
     print("Initializing database...")
     initialize_database()
-    ingest_tbill("Portfolio1","US10Y")
-    ingest_sp5("Portfolio1","SPY")
-    ingest_stock_data("Portfolio1","A")
-    ingest_important_data()
+
     
     
     # Start a ngrok tunnel to the local FastAPI app

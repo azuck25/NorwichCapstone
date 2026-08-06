@@ -2,9 +2,9 @@
 from fastapi import FastAPI
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from data_injest import ingest_stock_data, ingest_sp5, ingest_tbill, ingest_important_data
+#from data_injest import ingest_stock_data, ingest_sp5, ingest_tbill, ingest_important_data
 from fastapi import FastAPI, HTTPException
-from financial_models import *
+#from financial_models import *
 
 app = FastAPI()
 

@@ -16,14 +16,13 @@ class Portfolio(Base):
     portfolioName = Column(String(20), primary_key=True)
     stocks = relationship("Stock", back_populates="portfolio")
     tbills = relationship("TbillData", back_populates="portfolio", cascade="all, delete-orphan")
-    spindex = relationship("SPindex", back_populates="portfolio", cascade="all, delete-orphan")
-
-    
+    index_data = relationship("indexData", back_populates="portfolio", cascade="all, delete-orphan")
 
 class Stock(Base):
     __tablename__ = 'stocks'
     ticker = Column(String(20), primary_key=True)
     portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"))
+    api_queryDate = Column(Date,nullable=False)
     overview = relationship("Overview", back_populates="stock", cascade="all, delete-orphan")
     balance_sheet = relationship("BalanceSheet", back_populates="stock", cascade="all, delete-orphan")
     income_statement = relationship("IncomeStatement", back_populates="stock", cascade="all, delete-orphan")
@@ -68,18 +67,26 @@ class TimeSeriesDaily(Base):
     id = Column(Integer, primary_key=True)
     ticker = Column(String(20),ForeignKey('stocks.ticker', ondelete="CASCADE"), nullable=False)
     timestamp = Column(Date, nullable=False)
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
     close = Column(Float, nullable=False)
+    volume = Column(Float, nullable=False)
+    
     stock = relationship("Stock", back_populates="timeseries_daily")
 
-class SPindex(Base):
-    __tablename__ = 'spindex'
+class indexData(Base):
+    __tablename__ = 'index_data'
     id = Column(Integer, primary_key=True)
     portId = Column(String(20),ForeignKey('portfolio.portfolioName', ondelete="CASCADE"))
     ticker = Column(String(20))
     timestamp = Column(Date,nullable=False)
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
     close = Column(Float, nullable=False)
 
-    portfolio = relationship("Portfolio", back_populates="spindex")
+    portfolio = relationship("Portfolio", back_populates="index_data")
 
 class Overview(Base):
     __tablename__ = 'overview'

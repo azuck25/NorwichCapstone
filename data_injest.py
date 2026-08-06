@@ -1,9 +1,11 @@
 # data_ingest.py
 from database import *
-from AV_API_pull import *
+import AV_API_pull as alphaVantageAPI
+import asyncio
+import aiohttp, pandas, datetime
 
 #Function triggers pulling, formating, and adding for the SP500
-def ingest_sp5(portfolioId: str, sp: str):
+def ingest_index(portfolioId: str, sp: str):
     print("Function Triggered")
     session = Session()
     sp_data = normalizeClean(pull_SP500(sp))
@@ -55,27 +57,48 @@ def ingest_tbill(portfolioId: str, ticker: str):
     elif portfolio:
         session.delete(portfolio)
         session.commit()
-        ingest_tbill(ticker)
+        ingest_tbill(portfolioId,ticker)
         print("Refreshing T-Bill Data...")
     return None
 
-def ingest_stock_data(portfolioId: str, ticker: str):
+async def pullEquityData(ticker : str):
     session = Session()
+    queryDB = session.query(Stock).filter_by(ticker=ticker).first()
+    if queryDB is None:
+        avApi = alphaVantageAPI(ticker)
+        overview = avApi.pull_Overview()
+        balance_sheet = avApi.pull_balSheet()
+        income_statement = avApi.pull_incState()
+        cash_flow = avApi.pull_cashFlow()
+        time_series = avApi.pull_dailyPrice()
+        
+        zip_Df = [overview, 
+                     balance_sheet,
+                     income_statement,
+                     cash_flow,
+                     time_series]
+    else:
+        queryDate = f"SELECT * FROM fin_data.stocks"
+        queryExec = session.execute()
+        print(queryDate)
+        return queryDate
+    
+     
+    return zip_Df
+
+
+def ingest_stock_data(portfolioId: str, ticker: str):
+    
     x = 0
-    # Ensure stock record exists
-    stock = session.query(Stock).filter_by(ticker=ticker).first()
-    # Pull and Normalize Data
-    overview = normalizeClean(pull_Overview(ticker))
-    balance_sheet = normalizeClean(pull_balSheet(ticker))
-    income_statement = normalizeClean(pull_incState(ticker))
-    cash_flow = normalizeClean(pull_cashFlow(ticker))
-    time_series = normalizeClean(pull_timeSeriesPriceDaily(ticker))
+
+    stock, zip_DF = pullEquityData(ticker=ticker)
+    
     y = True
     # If stock is not found and the first data frame is not empty
     if not stock and overview is not None:
         print("Stock not found updating entry...")
         print(stock)
-        stock = Stock(ticker=ticker, portId=portfolioId)
+        stock = Stock(ticker=ticker, portId=portfolioId, api_queryDate=datetime.datetime.now())
         session.add(stock)
         session.commit()
 
@@ -124,7 +147,7 @@ def ingest_stock_data(portfolioId: str, ticker: str):
         print("Stock exists, overwriting data to avoid collision")
         session.delete(stock)
         session.commit()
-        ingest_stock_data(ticker)
+        ingest_stock_data(portfolioId, ticker)
         print("recursive function called")
 
     else:
