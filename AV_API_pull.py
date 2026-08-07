@@ -8,47 +8,52 @@ from io import StringIO
 from datetime import date
 
  
-apiKey = '5TFQU47K2QUCZVRF'
-try:
-    session = aio.ClientSession()
-except RuntimeError as err:
-    print("No Asychronus process spawned : ",err)
-    session = req.Session()
+
+
     
     
 class pullEquity:
     
     def __init__(self, ticker):
         self.ticker = ticker
-        statement = ""
-        self.url = f"https://www.alphavantage.co/query?function='{statement}'&symbol='{ticker}'&apikey="+ apiKey
         self.overview = "OVERVIEW"
         self.balanceSheet = "BALANCE_SHEET"
         self.incomeStatement = "INCOME_STATEMENT"
         self.cashFlow = "CASH_FLOW"
-        self.timeSeriesPrice = "TIME_SERIES_DAILY"
+        self.timeSeriesDaily = "TIME_SERIES_DAILY"
    
-    def pull_Overview(self):
-        overview = session.get(self.url.format(self.overview,self.ticker))
-        data_overview = overview.json()
-        return normalizeData.normalizeClean(data_overview)
-    def pull_balSheet(self):
-        balSheet = session.get(self.url.format(self))
-        data_balSheet = balSheet.json()
-        return normalizeData.normalizeClean(data_balSheet)
-    def pull_incState(self):
-        incState = session.get(self.url.format(self.incomeStatement, self.ticker))
-        data_incState = incState.json()
-        return normalizeData.normalizeClean(data_incState)
-    def pull_cashFlow(self):
-        cashFlow = session.get(self.url.format(self.cashFlow,self.ticker))
-        data_cashFlow = cashFlow.json()
-        return normalizeData.normalizeClean(data_cashFlow)
-    def pull_dailyPrice(self):
-        dailyP = session.get(f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='{self.ticker}'&outputsize=full&apikey=" + apiKey)
-        data_dailyTimeSeries = dailyP.json()
-        return normalizeData.normalizeClean(data_dailyTimeSeries)
-                      
+    async def pull_Data(self,urlA,statement,ticker):
+        url = f"https://www.alphavantage.co/query?function={statement}&symbol={ticker}&apikey=5TFQU47K2QUCZVRF"
+        urlDailyPrice = f"https://www.alphavantage.co/query?function={statement}&symbol={ticker}&outputsize=full&apikey=5TFQU47K2QUCZVRF"
+        
+        if(urlA == 1):
+            urlA = urlDailyPrice
+        elif(urlA == 0):
+            urlA = url
+        
+        async with aio.ClientSession() as session:
+            async with session.get(urlA) as response:
+                print(response)
+                data = await response.json()
+                print(data)
+                return normalizeData.normalizeClean(data)
+            
+    async def pull_allStatements(self):
+        overview = await pullEquity.pull_Data(self, 0, self.overview, self.ticker)
+        balance_sheet = await pullEquity.pull_Data(self, 0, self.balanceSheet, self.ticker)
+        income_statement = await pullEquity.pull_Data(self, 0, self.incomeStatement, self.ticker)
+        cash_flow = await pullEquity.pull_Data(self, 0, self.cashFlow, self.ticker)
+        time_series = await pullEquity.pull_Data(self, 1, self.timeSeriesDaily, self.ticker)
+                
+        zip_Df = [overview, 
+                balance_sheet,
+                income_statement,
+                cash_flow,
+                time_series]
+        
+        return zip_Df
+        
+                    
 class pullGlobalMarketStatus:
     def pull_MarketStatus():
         glbStatus = session.get('https://www.alphavantage.co/query?function=MARKET_STATUS&'+apiKey)
@@ -153,8 +158,8 @@ class normalizeData:
             #print(df)
             return df
         
-        elif data is not None:
-            df = pd.json_normalize
+        #elif data is not None:
+            #df = pd.json_normalize()
             
             
         else:

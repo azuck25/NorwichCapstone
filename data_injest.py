@@ -62,31 +62,25 @@ def ingest_tbill(portfolioId: str, ticker: str):
     return None
 
 async def pullEquityData(ticker : str):
-    session = Session()
-    queryDB = session.query(Stock).filter_by(ticker=ticker).first()
-    if queryDB is None:
-        avApi = alphaVantageAPI(ticker)
-        overview = avApi.pull_Overview()
-        balance_sheet = avApi.pull_balSheet()
-        income_statement = avApi.pull_incState()
-        cash_flow = avApi.pull_cashFlow()
-        time_series = avApi.pull_dailyPrice()
+    #session = Session()
+    #queryDB = session.query(Stock).filter_by(ticker=ticker).first()
+
+    alphaV = alphaVantageAPI.pullEquity(ticker=ticker)
+    equityData = await alphaV.pull_allStatements()
+    return equityData
         
-        zip_Df = [overview, 
-                     balance_sheet,
-                     income_statement,
-                     cash_flow,
-                     time_series]
-    else:
-        queryDate = f"SELECT * FROM fin_data.stocks"
-        queryExec = session.execute()
-        print(queryDate)
-        return queryDate
+               
+    # else:
+    #     return None
+    #     # queryDate = f"SELECT api_queryDate FROM fin_data.stocks"
+    #     # dateUploaded = session.execute(queryDate)
+    #     # print(queryDate)
+    #     # checkDay = bool(dateUploaded.day < datetime.datetime.now().day)
+    #     # checkYear = bool(dateUploaded.year < datetime.datetime.now().year)
+    #     # #if checkDay or checkYear:
+            
+        
     
-     
-    return zip_Df
-
-
 def ingest_stock_data(portfolioId: str, ticker: str):
     
     x = 0
