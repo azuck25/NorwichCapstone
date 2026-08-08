@@ -62,30 +62,43 @@ def ingest_tbill(portfolioId: str, ticker: str):
     return None
 
 async def pullEquityData(ticker : str):
-    #session = Session()
-    #queryDB = session.query(Stock).filter_by(ticker=ticker).first()
-
-    alphaV = alphaVantageAPI.pullEquity(ticker=ticker)
-    equityData = await alphaV.pull_allStatements()
-    return equityData
+    session = Session()
+    queryDB = session.query(Stock).filter_by(ticker=ticker).first()
+    
+    if queryDB is None:
+        alphaV = alphaVantageAPI.pullEquity(ticker=ticker)
+        equityData = await alphaV.pull_allStatements()
+        return equityData
         
                
-    # else:
-    #     return None
-    #     # queryDate = f"SELECT api_queryDate FROM fin_data.stocks"
-    #     # dateUploaded = session.execute(queryDate)
-    #     # print(queryDate)
-    #     # checkDay = bool(dateUploaded.day < datetime.datetime.now().day)
-    #     # checkYear = bool(dateUploaded.year < datetime.datetime.now().year)
-    #     # #if checkDay or checkYear:
+    else:
+        lastRefresh = queryDB.api_queryDate[0]
+        callRefresh = bool(lastRefresh.datetime.date < datetime.datetime.now().date)
+        
+        if(callRefresh):
+            alphaV = alphaVantageAPI.pullEquity(ticker=ticker)
+            equityData = await alphaV.pull_allStatements()
+            return equityData
+
+            
+       
+        
+        # dateUploaded = session.execute(queryDate)
+        # print(queryDate)
+        # checkDay = bool(dateUploaded.day < datetime.datetime.now().day)
+        # checkYear = bool(dateUploaded.year < datetime.datetime.now().year)
+        # #if checkDay or checkYear:
             
         
     
-def ingest_stock_data(portfolioId: str, ticker: str):
+async def streamEquityDataToDB(portfolioId: str, ticker: str):
     
     x = 0
 
-    stock, zip_DF = pullEquityData(ticker=ticker)
+    zip_Df = pullEquityData(ticker=ticker)
+    
+    
+    
     
     y = True
     # If stock is not found and the first data frame is not empty

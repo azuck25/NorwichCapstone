@@ -1,16 +1,15 @@
 import AV_API_pull as av
 import data_injest as dataStream
 import asyncio, aiohttp
-
+import pandas as pd
 
 async def main():
     tickers = ["IBM","A", "NVDA"]
-    tasks = [dataStream.pullEquityData(t) for t in tickers]
-    data = await asyncio.gather(*tasks)
+    results = [dataStream.pullEquityData(i) for i in tickers]
+    data = await asyncio.gather(*results)
     
-    for i in data:
-        print(i)
-        
+    
+    
         
 asyncio.run(main())
 

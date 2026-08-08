@@ -14,7 +14,15 @@ Base = declarative_base()
 class Portfolio(Base):
     __tablename__ = 'portfolio'
     portfolioName = Column(String(20), primary_key=True)
+    portfolioID = Column(Integer)
+    portfolioCreationDate = Column(Date)
+    tradingModel = Column(String(20))
+    riskLevel = Column(Float)
+    valueAtRisk = Column(Float)
+    portofolioValue = Column(Float)
     stocks = relationship("Stock", back_populates="portfolio")
+    #add debt instruments
+    #add crypto currency instruments
     tbills = relationship("TbillData", back_populates="portfolio", cascade="all, delete-orphan")
     index_data = relationship("indexData", back_populates="portfolio", cascade="all, delete-orphan")
 

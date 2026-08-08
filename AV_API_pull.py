@@ -4,16 +4,26 @@ import numpy as np
 import pandas as pd
 import json
 import re
+import asyncio
 from io import StringIO
 from datetime import date
 
  
 
-
-    
-    
+class equitySecurity:
+    def __int__(self, ticker, overview, balanceSheet, 
+                incomeStatement, cashFlowStatement, historicalPrice):
+        
+        self.ticker = ticker
+        self.summary = pd.DataFrame(overview)
+        self.balSheet = pd.DataFrame(balanceSheet)
+        self.incStatement = pd.DataFrame(incomeStatement)
+        self.cashFlw = pd.DataFrame(cashFlowStatement)
+        self.histPrice = pd.DataFrame(historicalPrice)
+ 
+       
+        
 class pullEquity:
-    
     def __init__(self, ticker):
         self.ticker = ticker
         self.overview = "OVERVIEW"
@@ -21,6 +31,13 @@ class pullEquity:
         self.incomeStatement = "INCOME_STATEMENT"
         self.cashFlow = "CASH_FLOW"
         self.timeSeriesDaily = "TIME_SERIES_DAILY"
+        self.attributeArray = [self.overview,
+                               self.balanceSheet,
+                               self.incomeStatement,
+                               self.cashFlow,
+                               self.timeSeriesDaily]
+
+
    
     async def pull_Data(self,urlA,statement,ticker):
         url = f"https://www.alphavantage.co/query?function={statement}&symbol={ticker}&apikey=5TFQU47K2QUCZVRF"
@@ -36,22 +53,19 @@ class pullEquity:
                 print(response)
                 data = await response.json()
                 print(data)
-                return normalizeData.normalizeClean(data)
+                normalizedObj = normalizeData.normalizeClean(data)
+                return normalizedObj
+    
+    async def iterateRequest(self,statement : str):
+        if(statement != self.timeSeriesDaily):
+            data = pullEquity.pull_Data(self,0,statement,self.ticker)
+            return data
             
     async def pull_allStatements(self):
-        overview = await pullEquity.pull_Data(self, 0, self.overview, self.ticker)
-        balance_sheet = await pullEquity.pull_Data(self, 0, self.balanceSheet, self.ticker)
-        income_statement = await pullEquity.pull_Data(self, 0, self.incomeStatement, self.ticker)
-        cash_flow = await pullEquity.pull_Data(self, 0, self.cashFlow, self.ticker)
-        time_series = await pullEquity.pull_Data(self, 1, self.timeSeriesDaily, self.ticker)
-                
-        zip_Df = [overview, 
-                balance_sheet,
-                income_statement,
-                cash_flow,
-                time_series]
-        
-        return zip_Df
+        tasks = [pullEquity.iterateRequest(i) for i in self.attributeArray]
+        results = await asyncio.gather(*tasks) 
+        equityObj = equitySecurity().__int__(self.ticker,*results) 
+        return equityObj
         
                     
 class pullGlobalMarketStatus:
