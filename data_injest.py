@@ -1,88 +1,96 @@
 # data_ingest.py
+from pandas.core.interchange.dataframe_protocol import DataFrame
+
 from database import *
 import AV_API_pull as alphaVantageAPI
 import asyncio
 import aiohttp, pandas, datetime
+import time
+
+
+
 
 #Function triggers pulling, formating, and adding for the SP500
-def ingest_index(portfolioId: str, sp: str):
-    print("Function Triggered")
-    session = Session()
-    sp_data = normalizeClean(pull_SP500(sp))
-    print(sp_data)
-    portfolio = session.query(Portfolio).filter_by(portfolioName=portfolioId).first()
-    if not portfolio and sp_data is not None:
-        print("SP500 data not found adding...")
-        portfolio = Stock(ticker=sp)
-        session.add(portfolio)
-        session.commit()
-        sp_data = normalizeClean(pull_SP500(sp))
-        #print(sp_data)
-        if sp_data is not None:
-            for _,row in sp_data.iterrows():
-                add_sp = SPindex(ticker=sp,portId=portfolioId, **row)
-                session.add(add_sp)
-            session.commit()
-            session.close()
+# def ingest_index(portfolioId: str, sp: str):
+#     print("Function Triggered")
+#     session = Session()
+#     sp_data = normalizeClean(pull_SP500(sp))
+#     print(sp_data)
+#     portfolio = session.query(Portfolio).filter_by(portfolioName=portfolioId).first()
+#     if not portfolio and sp_data is not None:
+#         print("SP500 data not found adding...")
+#         portfolio = Stock(ticker=sp)
+#         session.add(portfolio)
+#         session.commit()
+#         sp_data = normalizeClean(pull_SP500(sp))
+#         #print(sp_data)
+#         if sp_data is not None:
+#             for _,row in sp_data.iterrows():
+#                 add_sp = SPindex(ticker=sp,portId=portfolioId, **row)
+#                 session.add(add_sp)
+#             session.commit()
+#             session.close()
+#
+#             return {"status": "success", "ticker": sp}
+#     elif portfolio:
+#         return {"status": "data exists"}
+#
+#     return None
+#
+# def ingest_tbill(portfolioId: str, ticker: str):
+#     session = Session()
+#     portfolio = session.query(Portfolio).filter_by(portfolioName=portfolioId).first()
+#     print(portfolio)
+#     if not portfolio:
+#         print("10Y TBILL data not found adding...")
+#         tbill_data = normalizeClean(pull_TbilltenY(ticker))
+#
+#         if tbill_data is not None:
+#             print("Printing TBILL Data")
+#             print(tbill_data)
+#             portfolio = Portfolio(portfolioName=portfolioId)
+#             session.add(portfolio)
+#             session.commit()
+#             for _,row in tbill_data.iterrows():
+#                 tbill_obj = TbillData(ticker=ticker,portId=portfolioId,**row)
+#                 session.add(tbill_obj)
+#
+#         session.commit()
+#         session.close()
+#     # Else if the stock is found and the function that adds data hasnt been triggered
+#     # Then delete the corresponding ticker data and recursively call the function to
+#     # refresh the data
+#     elif portfolio:
+#         session.delete(portfolio)
+#         session.commit()
+#         ingest_tbill(portfolioId,ticker)
+#         print("Refreshing T-Bill Data...")
+#     return None
 
-            return {"status": "success", "ticker": sp}
-    elif portfolio:
-        return {"status": "data exists"}
+async def pull_equity_data(ticker : str):
 
-    return None
+        #session = Session()
+        #query_db = session.query(Stock).filter_by(ticker=ticker).first()
+        #print(ticker)
 
-def ingest_tbill(portfolioId: str, ticker: str):
-    session = Session()
-    portfolio = session.query(Portfolio).filter_by(portfolioName=portfolioId).first()
-    print(portfolio)
-    if not portfolio:
-        print("10Y TBILL data not found adding...")
-        tbill_data = normalizeClean(pull_TbilltenY(ticker))
-        
-        if tbill_data is not None:
-            print("Printing TBILL Data")
-            print(tbill_data)
-            portfolio = Portfolio(portfolioName=portfolioId)
-            session.add(portfolio)
-            session.commit()
-            for _,row in tbill_data.iterrows():
-                tbill_obj = TbillData(ticker=ticker,portId=portfolioId,**row)
-                session.add(tbill_obj)
-                
-        session.commit()
-        session.close()
-    # Else if the stock is found and the function that adds data hasnt been triggered
-    # Then delete the corresponding ticker data and recursively call the function to
-    # refresh the data
-    elif portfolio:
-        session.delete(portfolio)
-        session.commit()
-        ingest_tbill(portfolioId,ticker)
-        print("Refreshing T-Bill Data...")
-    return None
+        alpha_v = alphaVantageAPI.PullInstruments(ticker=ticker)
 
-async def pullEquityData(ticker : str):
-    session = Session()
-    queryDB = session.query(Stock).filter_by(ticker=ticker).first()
-    
-    if queryDB is None:
-        alphaV = alphaVantageAPI.pullEquity(ticker=ticker)
-        equityData = await alphaV.pull_allStatements()
-        return equityData
-        
-               
-    else:
-        lastRefresh = queryDB.api_queryDate[0]
-        callRefresh = bool(lastRefresh.datetime.date < datetime.datetime.now().date)
-        
-        if(callRefresh):
-            alphaV = alphaVantageAPI.pullEquity(ticker=ticker)
-            equityData = await alphaV.pull_allStatements()
-            return equityData
+        equity_securities =  await alpha_v.pull_all_statements(alpha_v.attributeArray,ticker)
 
-            
-       
-        
+
+
+        return equity_securities
+
+        # else:
+        #     last_refresh = query_db.api_queryDate[0]
+        #     call_refresh = bool(last_refresh.datetime.date < datetime.datetime.now().date)
+        #
+        #     alpha_v = alphaVantageAPI.PullInstruments(ticker=ticker)
+        #     equity_securities = alpha_v.pull_all_statements(alpha_v.attributeArray,ticker)
+        #     #print(equity_securities.balSheet)
+        #     return equity_securities
+
+
         # dateUploaded = session.execute(queryDate)
         # print(queryDate)
         # checkDay = bool(dateUploaded.day < datetime.datetime.now().day)
@@ -91,21 +99,23 @@ async def pullEquityData(ticker : str):
             
         
     
-async def streamEquityDataToDB(portfolioId: str, ticker: str):
-    
+async def equity_data_pipeline(portfolio_id: str, ticker: str):
     x = 0
+    equity_dataframes =  await pull_equity_data(ticker)
+    session = Session()
+    stock = session.query(Stock).filter_by(ticker).first()
+    time_series = equity_dataframes.histPrice
+    overview = equity_dataframes.overview
+    balance_sheet = equity_dataframes.balSheet
+    income_statement = equity_dataframes.incStatement
+    cash_flow = equity_dataframes.cashFlw
 
-    zip_Df = pullEquityData(ticker=ticker)
-    
-    
-    
-    
-    y = True
+
     # If stock is not found and the first data frame is not empty
-    if not stock and overview is not None:
-        print("Stock not found updating entry...")
+    if not stock and equity_dataframes.ticker is not None:
+        print("Stock not found adding company...")
         print(stock)
-        stock = Stock(ticker=ticker, portId=portfolioId, api_queryDate=datetime.datetime.now())
+        stock = Stock(ticker=ticker, portId=portfolio_id, api_queryDate=datetime.datetime.now())
         session.add(stock)
         session.commit()
 
@@ -154,44 +164,44 @@ async def streamEquityDataToDB(portfolioId: str, ticker: str):
         print("Stock exists, overwriting data to avoid collision")
         session.delete(stock)
         session.commit()
-        ingest_stock_data(portfolioId, ticker)
-        print("recursive function called")
+        await equity_data_pipeline(portfolio_id, ticker)
+        return {"status" : "recursive function call"}
 
     else:
         y = False
         return y
 
 
-
-def ingest_important_data():
-    session = Session()
-    top_winners, top_losers, most_traded = normalizeClean(pull_topMovers())
-    t = top_winners['ticker'].iloc[0]
-    print(t)
-    stock = session.query(TopWinners).filter_by(ticker=t).first()
-    print(stock)
-    if not stock:
-        #If the dataframe is not empty
-        if top_winners is not None:
-            print("Entering into data pipeline")
-            #iterate by index, row and add the rows contents
-            for _,row in top_winners.iterrows():
-                #print("1\n")
-                winner_obj = TopWinners(**row)
-                session.add(winner_obj)
-            for _,row in top_losers.iterrows():
-                losers_obj = TopLosers(**row)
-                session.add(losers_obj)
-            for _,row in most_traded.iterrows():
-                mover_obj = MostTraded(**row)
-                session.add(mover_obj)
-
-            session.commit()
-            session.close()
-            return "success"
-        else:
-            return "failure"
-    else:
-
-        print("Data exists...")
-        return "success"
+#
+# def ingest_important_data():
+#     session = Session()
+#     top_winners, top_losers, most_traded = normalizeClean(pull_topMovers())
+#     t = top_winners['ticker'].iloc[0]
+#     print(t)
+#     stock = session.query(TopWinners).filter_by(ticker=t).first()
+#     print(stock)
+#     if not stock:
+#         #If the dataframe is not empty
+#         if top_winners is not None:
+#             print("Entering into data pipeline")
+#             #iterate by index, row and add the rows contents
+#             for _,row in top_winners.iterrows():
+#                 #print("1\n")
+#                 winner_obj = TopWinners(**row)
+#                 session.add(winner_obj)
+#             for _,row in top_losers.iterrows():
+#                 losers_obj = TopLosers(**row)
+#                 session.add(losers_obj)
+#             for _,row in most_traded.iterrows():
+#                 mover_obj = MostTraded(**row)
+#                 session.add(mover_obj)
+#
+#             session.commit()
+#             session.close()
+#             return "success"
+#         else:
+#             return "failure"
+#     else:
+#
+#         print("Data exists...")
+#         return "success"

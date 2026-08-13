@@ -7,23 +7,21 @@ import re
 import asyncio
 from io import StringIO
 from datetime import date
+from pandas import DataFrame
 
- 
 
-class equitySecurity:
-    def __int__(self, ticker, overview, balanceSheet, 
-                incomeStatement, cashFlowStatement, historicalPrice):
-        
-        self.ticker = ticker
-        self.summary = pd.DataFrame(overview)
-        self.balSheet = pd.DataFrame(balanceSheet)
-        self.incStatement = pd.DataFrame(incomeStatement)
-        self.cashFlw = pd.DataFrame(cashFlowStatement)
-        self.histPrice = pd.DataFrame(historicalPrice)
- 
-       
-        
-class pullEquity:
+
+class EquitySecurity:
+    def __init__(self, overview,
+                balance_sheet,
+                income_statement,
+                cashflow_statement):
+        self.overview = overview
+        self.balance_sheet = balance_sheet
+        self.income_statement = income_statement
+        self.cash_flow = cashflow_statement
+
+class PullInstruments:
     def __init__(self, ticker):
         self.ticker = ticker
         self.overview = "OVERVIEW"
@@ -34,73 +32,97 @@ class pullEquity:
         self.attributeArray = [self.overview,
                                self.balanceSheet,
                                self.incomeStatement,
-                               self.cashFlow,
-                               self.timeSeriesDaily]
+                               self.cashFlow]
 
 
-   
-    async def pull_Data(self,urlA,statement,ticker):
-        url = f"https://www.alphavantage.co/query?function={statement}&symbol={ticker}&apikey=5TFQU47K2QUCZVRF"
-        urlDailyPrice = f"https://www.alphavantage.co/query?function={statement}&symbol={ticker}&outputsize=full&apikey=5TFQU47K2QUCZVRF"
-        
-        if(urlA == 1):
-            urlA = urlDailyPrice
-        elif(urlA == 0):
-            urlA = url
-        
-        async with aio.ClientSession() as session:
-            async with session.get(urlA) as response:
-                print(response)
-                data = await response.json()
-                print(data)
-                normalizedObj = normalizeData.normalizeClean(data)
-                return normalizedObj
-    
-    async def iterateRequest(self,statement : str):
-        if(statement != self.timeSeriesDaily):
-            data = pullEquity.pull_Data(self,0,statement,self.ticker)
+
+    @staticmethod
+    async def pull_data(url_a:int, function=None, ticker=None, interval=None):
+        url = f"https://www.alphavantage.co/query?function={function}&symbol={ticker}&apikey=5TFQU47K2QUCZVRF"
+        url_daily_price = f"https://www.alphavantage.co/query?function={function}&symbol={ticker}&outputsize=full&apikey=5TFQU47K2QUCZVRF"
+        url_indexes =  f"https://www.alphavantage.co/query?function='{function}'&symbol='{ticker}'&interval='{interval}'&apikey=5TFQU47K2QUCZVRF"
+        market_status = f'https://www.alphavantage.co/query?function={function}&'
+        economic_indicators = f"https://www.alphavantage.co/query?function={function}&symbol='{ticker}'&interval='{interval}'&apikey=5TFQU47K2QUCZVRF"
+        if url_a == 0:
+            url = url_daily_price
+        elif url_a == 1:
+            url = url
+        elif url_a == 2:
+            url = url_indexes
+        elif url_a == 3:
+            url = market_status
+        elif url_a == 4:
+            url = economic_indicators
+
+
+        timeout = aio.ClientTimeout(total=120,connect=120,sock_connect=120)
+
+        print("Attempting Connection")
+        async with aio.ClientSession(timeout=timeout) as session:
+                async with session.get(url) as response:
+                    print(response)
+                    if response.status != 200:
+                        raise aio.ClientError
+                    data = await response.json()
+                    normalized_obj = await Normalizedata.normalize_clean(data)
+                    await asyncio.sleep(0.5)
+                    return normalized_obj
+
+
+
+    @staticmethod
+    def iterate_request(ticker: str, statement : str):
+        if statement != PullInstruments(ticker).timeSeriesDaily:
+            data = PullInstruments.pull_data(1, statement, ticker)
             return data
-            
-    async def pull_allStatements(self):
-        tasks = [pullEquity.iterateRequest(i) for i in self.attributeArray]
-        results = await asyncio.gather(*tasks) 
-        equityObj = equitySecurity().__int__(self.ticker,*results) 
-        return equityObj
+        else:
+            data = PullInstruments.pull_data(1, statement, ticker)
+            return data
+
+    @staticmethod
+    async def pull_all_statements(attribute_array, ticker):
+
+            tasks = [PullInstruments.iterate_request(ticker, i) for i in attribute_array]
+            results = await asyncio.gather(*tasks)
+            catch = EquitySecurity(*results)
+            print("Statements returned")
+            print(catch)
+            return catch
+
         
-                    
-class pullGlobalMarketStatus:
-    def pull_MarketStatus():
-        glbStatus = session.get('https://www.alphavantage.co/query?function=MARKET_STATUS&'+apiKey)
-        data = glbStatus.json()
-        return normalizeData.normalizeClean(data)
+# class pullGlobalMarketStatus:
+#     async def pull_market_status(self):
+#         glb_status = await asyncio.get()
+#         data = glb_status.json()
+#         return Normalizedata.normalize_clean(data)
                 
-class pullIndexes:
-    
-    def __init__(self, ticker,interval):
-         self.url = f"https://www.alphavantage.co/query?function='{function1}'&symbol='{ticker}'&interval='{interval}'&apikey="+ apiKey
-         function1 = "INDEX_DATA"
-         self.function2 = "INDEX_CATALOG"
-         interval = "DAILY"
-         self.ticker = ticker
-       
-    def pull_Index(self):
-        index = session.get(self.url.format(self.ticker,self.interval))
-        data = index.json()
-        return data
+# class pullIndexes:
+#     def __init__(self, ticker,interval):
+#          self.url = f"https://www.alphavantage.co/query?function='{function1}'&symbol='{ticker}'&interval='{interval}'&apikey="+ apiKey
+#          function1 = "INDEX_DATA"
+#          self.function2 = "INDEX_CATALOG"
+#          interval = "DAILY"
+#          self.ticker = ticker
+#
+#     def pull_Index(self):
+#         index = asyncio.get(self.url.format(self.ticker,self.interval))
+#         data = index.json()
+#         return data
+#
+#     def pull_Index_Catalog(self):
+#         catalog = asyncio.get(f"https://www.alphavantage.co/query?function='{self.function2}'&apikey="+ apiKey)
+#         data = catalog.json()
+#         return data
+#
+# class pullEconomicIndicators:
+#     def __init__(self, ticker):
+#         #needs fixed
+#         self.url = f"https://www.alphavantage.co/query?function=INDEX_DATA&symbol='{ticker}'&interval='{ticker}'&apikey=" + apiKey
 
-    def pull_Index_Catalog(self):
-        catalog = session.get(f"https://www.alphavantage.co/query?function='{self.function2}'&apikey="+ apiKey)
-        data = catalog.json()
-        return data
-    
-class pullEconomicIndicators:
-    def __init__(self, ticker):
-        #needs fixed
-        self.url = f"https://www.alphavantage.co/query?function=INDEX_DATA&symbol='{ticker}'&interval='{ticker}'&apikey=" + apiKey
 
+class Normalizedata:
 
-class normalizeData:
-
+    @staticmethod
     def set_datatype(df):
         for col in df.columns:
             if col == 'ticker':
@@ -112,10 +134,10 @@ class normalizeData:
                 df[col] = df[col].astype('float64')
 
         return df
-
-    def normalizeClean(data):
-        #Index data 
-        if ("data" in data):
+    @staticmethod
+    async def normalize_clean(data):
+        #Index data
+        if "data" in data:
             df = pd.json_normalize(data['data'], sep='_')
             df['date'] = pd.to_datetime(df['date'])
             df['value'] = df['value'].astype('float64')
@@ -123,18 +145,18 @@ class normalizeData:
             #print(df)
             return df
 
-        elif ("top_gainers" in data):
+        elif "top_gainers" in data:
             df = pd.json_normalize(data['top_gainers'], sep='_')
             df2 = pd.json_normalize(data['top_losers'], sep='_')
             df3 = pd.json_normalize(data['most_actively_traded'], sep='_')
 
-            df = normalizeData.set_datatype(df)
-            df2 = normalizeData.set_datatype(df2)
-            df3 = normalizeData.set_datatype(df3)
+            df = Normalizedata.set_datatype
+            df2 = Normalizedata.set_datatype
+            df3 = Normalizedata.set_datatype
 
             return df, df2, df3
 
-        elif (isinstance(data, pd.DataFrame) and "close" in data.columns):
+        elif isinstance(data, pd.DataFrame) and "close" in data.columns:
             #data.drop(columns=['open', 'high', 'low', 'volume'], inplace=True)
 
             #data.set_index("timestamp", inplace=True)
@@ -142,7 +164,7 @@ class normalizeData:
             #df = df.replace({np.nan: None})
             return data
 
-        elif ("Description" in data and "Beta" in data):
+        elif "Description" in data and "Beta" in data:
             df = pd.json_normalize(data, sep='_').T
             #print(df.info())
             df.replace("None", 0, inplace=True)
@@ -158,7 +180,7 @@ class normalizeData:
             return df
 
 
-        elif ("quarterlyReports" in data):
+        elif "quarterlyReports" in data:
             df = pd.json_normalize(data['quarterlyReports'], sep='_')
             df.drop(columns=['reportedCurrency'], inplace=True)
             df['fiscalDateEnding'] = pd.to_datetime(df['fiscalDateEnding']).dt.date
@@ -171,13 +193,13 @@ class normalizeData:
             df = df.replace({np.nan: None})
             #print(df)
             return df
-        
-        #elif data is not None:
-            #df = pd.json_normalize()
-            
-            
-        else:
-            return None
+
+        elif data is not None:
+            df = pd.json_normalize(data)
+            return df
+
+
+
             
         
 

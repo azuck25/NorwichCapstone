@@ -19,7 +19,7 @@ class Portfolio(Base):
     tradingModel = Column(String(20))
     riskLevel = Column(Float)
     valueAtRisk = Column(Float)
-    portofolioValue = Column(Float)
+    portfolioValue = Column(Float)
     stocks = relationship("Stock", back_populates="portfolio")
     #add debt instruments
     #add crypto currency instruments
