@@ -1,5 +1,7 @@
 # NorwichCapstone
-Backend System used to streamline financial time series data on equities to the frontend UI.
+Backend System used to streamline financial time series data on equities to the frontend UI hosted on Retool. 
+The project as is on Github is not online. As stated this is the backend system which forms the ETL pipeline to the database which will then serve a UI which could be a variety of different data visualization tools.
+Currently I have a front end designed on Retool which allows a user to build a portfolio.
 
 
 
